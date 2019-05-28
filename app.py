@@ -29,12 +29,13 @@ def login():
     login_user = users.find_one({'name': request.form.to_dict()})
 
     if login_user:
-        request.form = bcrypt.gensalt()
-        login_user['password'] = bcrypt.gensalt()
-        if bcrypt.hashpw(request.form.to_dict(), login_user['password']) == login_user[
-            'password']:
-            session['username'] = request.form.to_dict()
-            return redirect(url_for('index'))
+        pass
+        # request.form = bcrypt.gensalt()
+        # login_user['password'] = bcrypt.gensalt()
+        # if bcrypt.hashpw(request.form.to_dict(), login_user['password']) == login_user[
+        #     'password']:
+        #     session['username'] = request.form.to_dict()['username']
+        #     return redirect(url_for('index'))
 
     return 'Invalid username/password combination'
 
@@ -46,9 +47,10 @@ def register():
         existing_user = users.find_one({'name': request.form.to_dict()})
 
         if existing_user is None:
-            hashpass = bcrypt.hashpw(request.form.to_dict(), bcrypt.gensalt())
-            users.insert({'name': request.form.to_dict(), 'password': hashpass})
-            session['username'] = request.form.to_dict()
+            passwd = request.form.to_dict()['pass'].encode()
+            hashpass = bcrypt.hashpw(passwd, bcrypt.gensalt())
+            users.insert({'name': request.form.to_dict()['username'], 'password': hashpass})
+            session['username'] = request.form.to_dict()['username']
             return redirect(url_for('index'))
 
         return 'That username already exists!'
