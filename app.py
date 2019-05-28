@@ -1,0 +1,61 @@
+from flask import Flask, render_template, url_for, request, session, redirect
+from flask_pymongo import PyMongo
+import bcrypt
+
+app = Flask(__name__)
+
+
+import os
+SECRET_KEY = os.urandom(32)
+app.config['SECRET_KEY'] = SECRET_KEY
+
+app.config['MONGO_DBNAME'] = 'mongologinexample'
+app.config['MONGO_URI'] = 'mongodb+srv://new-user_31:mongo625@firstcluster0-1vctv.mongodb.net/test?retryWrites=true'
+
+mongo = PyMongo(app)
+
+
+@app.route('/')
+def index():
+    if 'username' in session:
+        return 'You are logged in as ' + session['username']
+
+    return render_template('index.html')
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    users = mongo.db.users
+    login_user = users.find_one({'name': request.form.to_dict()})
+
+    if login_user:
+        request.form = bcrypt.gensalt()
+        login_user['password'] = bcrypt.gensalt()
+        if bcrypt.hashpw(request.form.to_dict(), login_user['password']) == login_user[
+            'password']:
+            session['username'] = request.form.to_dict()
+            return redirect(url_for('index'))
+
+    return 'Invalid username/password combination'
+
+
+@app.route('/register', methods=['POST', 'GET'])
+def register():
+    if request.method == 'POST':
+        users = mongo.db.users
+        existing_user = users.find_one({'name': request.form.to_dict()})
+
+        if existing_user is None:
+            hashpass = bcrypt.hashpw(request.form.to_dict(), bcrypt.gensalt())
+            users.insert({'name': request.form.to_dict(), 'password': hashpass})
+            session['username'] = request.form.to_dict()
+            return redirect(url_for('index'))
+
+        return 'That username already exists!'
+
+    return render_template('register.html')
+
+
+if __name__ == '__main__':
+    app.secret_key = 'mysecret'
+    app.run(debug=True)
